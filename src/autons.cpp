@@ -220,7 +220,7 @@ void ruileft () {
 
 void skills () {
 chassis.slew_drive_set(false);  // Disables global slew
-chassis.slew_drive_constants_set(5_in, 30); 
+chassis.slew_drive_constants_set(5_in, 30); //test for commiting
 bottom.move(-127);
 chassis.pid_wait_quick_chain();
 chassis.pid_drive_set(50_in, 80);
