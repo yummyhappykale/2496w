@@ -1,17 +1,69 @@
 #include "main.h"
 
 
+
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
 /////
 
+bool lPID = false;
+double targetpos = 320.00;
+double liftCurrentPosition;
+
+
+double liftPID(double error, double kP=5, double kI=0, double kD=0, double totalError=0, double prevError=0, double integralThreshold=30, double maxI=500) {
+    // calculate integral
+    if (abs(error) < integralThreshold)
+    {
+        totalError += error;
+    }
+
+    if (error > 0){
+        totalError = std::min(totalError, maxI);
+    }
+    else{
+        totalError = std::max(totalError, -maxI);
+    }
+
+    // calculate derivative
+    float derivative = error - prevError;
+    prevError = error;
+
+    // calculate output
+    double speed = (error * kP) + (totalError * kI) + (derivative * kD);
+
+    if (speed > 127){
+        speed = 127;
+    }
+    else if (speed < -127){
+        speed = -127;
+    }
+
+    return speed;
+}
+
+void liftTask(){
+  while(1){
+    liftCurrentPosition = (liftRotation.get_angle())/100;
+    double lerror = (targetpos-liftCurrentPosition);
+    if (lPID == true){
+      lift.move(liftPID(lerror,-0.34,-0.01,-0));
+    }
+    pros::delay(10);
+  }
+
+  // aadvik loves minors
+}
 
 // Chassis constructor
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
-    {18, -19, -20},     // Left Chassis Ports (negative port will reverse it!)
-    {-11, 12, 13},  // Right Chassis Ports (negative port will reverse it!)
+    {-20, 11},     // Left Chassis Ports (negative port will reverse it!)
+    {10, -1},  // Right Chassis Ports (negative port will reverse it!)
+
+    //19 is right side, 3 right 5.5 
+    //12, 14 is 5.5 left, 15 left 
 
 
     17,      // IMU Port
@@ -34,14 +86,31 @@ ez::Drive chassis(
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
+void akTask(){
+  while(true){
+    if (master.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)){
+      aktoggle.move(127);
+    } else {
+      aktoggle.move(0);
+    }
+    pros::delay(10);
+  }
+}
+
 void initialize() {
   // Print our branding over your terminal :D
   ez::ez_template_print();
 
 
   pros::delay(250);  // Stop the user from doing anything while legacy ports configure
+  pros::Task lftTask(liftTask);
+  pros::Task akTaskHandle(akTask);
+  lift.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 
+  
+
+    
   // Look at your horizontal tracking wheel and decide if it's in front of the midline of your robot or behind it
   //  - change `back` to `front` if the tracking wheel is in front of the midline
   //  - ignore this if you aren't using a horizontal tracker
@@ -50,13 +119,13 @@ void initialize() {
   //  - change `left` to `right` if the tracking wheel is to the right of the centerline
   //  - ignore this if you aren't using a vertical tracker
   // chassis.odom_tracker_left_set(&vert_tracker);
-
+   
 
   // Configure your chassis controls
-  chassis.opcontrol_curve_buttons_toggle(true);   // Enables modifying the controller curve with buttons on the joysticks
+  chassis.opcontrol_curve_buttons_toggle(false);  // Enables modifying the controller curve with buttons on the joysticks
   chassis.opcontrol_drive_activebrake_set(0.0);   // Sets the active brake kP. We recommend ~2.  0 will disable.
   chassis.opcontrol_curve_default_set(0.0, 0.0);  // Defaults for curve. If using tank, only the first parameter is used. (Comment this line out if you have an SD card!)
-
+  
 
   // Set the drive to your own constants from autons.cpp!
   default_constants();
@@ -71,8 +140,8 @@ void initialize() {
   ez::as::auton_selector.autons_add({
     
 
-   {".", skills},
-    //add new auton selector
+   {".", left_override}, //add new auton selectore
+    //add new auton selectore
     
     
   });
@@ -267,13 +336,16 @@ void ez_template_extras() {
 //why
 void opcontrol() {
   bool descoretoggle = true;
-  bool scrapertoggle = true;
+  bool clawtoggle = false; //open state 
+  bool clawTilttoggle = false;
   bool parktoggle = true;
   bool middlegoaltoggle = true;
   bool NEWL1 = false;
   bool NEWL2 = false;
   bool NEWR2 = false;
   bool NEWR1 = false;
+
+  pros::Controller master (pros::E_CONTROLLER_MASTER);
 
 
   // This is preference to what you like to drive on
@@ -282,7 +354,7 @@ void opcontrol() {
 
 
 
-  while (true) {
+while (true) {
     // Gives you some extras to make EZ-Template
     ez_template_extras();
 
@@ -295,10 +367,55 @@ void opcontrol() {
     //chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
 
-// top score
-  //   if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-  //     top.move(-127);
-  //   }
+    //intake stuff 
+    if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+       intake.move(-127);
+    }
+    else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+      intake.move(127);
+    } else { 
+      intake.move(0);
+    }
+    
+
+    if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)){
+           lPID = false;
+           targetpos = 320.00;
+    }  else{
+            if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
+                lift.move(127); //regular forwards movement
+                lPID = false;
+            } else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
+                lift.move(-127); //regular backwards movement
+                lPID = false;
+            } else {
+                lift.move(0); //doesnt move at all 
+            }
+        }
+    
+
+
+
+       
+
+    
+
+
+
+
+
+    // if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) { //low 
+    //   lPID = true;
+    //   targetpos = 269.00; //low height (change this position  later)
+    // }
+
+    //if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) { //RETURN TO ZERO  
+     // lPID = true;
+      //targetpos = 0.00; //low height (change this position  later)
+   // }
+
+   // end of all lift stuff ---------------------------------------------------------
+
 
   //   else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
   //     top.move(127);
@@ -327,50 +444,9 @@ void opcontrol() {
     // }
 
 
-if ((master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && NEWR1) ||
-    (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && NEWL1) ||
-    (NEWR1 && NEWL1) ||
-    (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)))
-{
-    // R1 + L1 Combo
-    bottom.move(127);
-    top.move(-127);
-}
-else if ((master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && NEWR2) ||
-         (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2) && NEWL2) ||
-         (NEWR2 && NEWL2) ||
-         (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)))
-{
-    // R2 + L2 Combo
-    bottom.move(-127);
-    top.move(127);
-}
-else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-{
-    bottom.move(127);
-}
-else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
-{
-    top.move(-127);
-}
-else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
-{
-    bottom.move(-127);
-}
-else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
-{
-    top.move(127);
-}
-else
-{
-    bottom.move(0);
-    top.move(0);
-}
 
-if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-   descore.set(descoretoggle);
-   descoretoggle = !descoretoggle; 
- }
+
+
     
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
  
@@ -380,49 +456,10 @@ if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
 
       
 
-    if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-      scrapertoggle = !scrapertoggle;
-      scraper.set(!scrapertoggle);
-      
-       }
-
-     if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-      middlegoaltoggle = !middlegoaltoggle;
-      middlegoal.set(!middlegoaltoggle);
-
-
-      }
-
-      if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
-      parktoggle = !parktoggle;
-      park.set(!parktoggle);
-      
-       }
-
- if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-      descore.set(descoretoggle);
-      descoretoggle = !descoretoggle;
-      
-    }
-
     
-//rumble when middle goal down
-    if (!middlegoaltoggle){
-      master.rumble(".");
-    }
-//middle goal slowdown
-if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
-  if (!middlegoaltoggle){
-    top.move(2);
   }
-  else{
-    top.move(127);
-  }
-}
-else{
-  top.move(0);
-}
-  
- }
+
+
+
 
 }

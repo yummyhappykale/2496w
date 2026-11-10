@@ -569,6 +569,85 @@ void motion_chaining() {
   chassis.pid_wait();
 }
 
+void left_override() {
+  // Motion chaining is where motions all try to blend together instead of individual movements.
+  // This works by exiting while the robot is still moving a little bit.
+  // To use this, replace pid_wait with pid_wait_quick_chain.
+  
+  //score first pin in alliance goal  
+  chassis.pid_drive_set(7_in, 80, true);
+  chassis.pid_wait();
+  lift.move(-127);
+  pros::delay(240);
+  lift.move(0);
+  chassis.pid_drive_set(11_in, 40, true);
+  chassis.pid_wait();
+
+  //turn to the stack 
+  chassis.pid_turn_set(-80_deg,TURN_SPEED,true);
+  chassis.pid_wait();
+  lift.move(127);
+  pros::delay(200);
+  lift.move(0);
+
+  //intajke teh stack 
+  intake.move(-127);  //opens intake
+  chassis.pid_drive_set(-6.2_in, 30, true);
+  chassis.pid_wait();
+  pros::delay(200);
+  intake.move(-127); //close the intake 
+  pros::delay(10);
+
+  //lift and turn to the stack 
+  lift.move(-127);
+  pros::delay(700);
+  lift.move(0);
+  chassis.pid_turn_set(129,50,true);
+  chassis.pid_wait();
+  chassis.pid_drive_set(-18_in, DRIVE_SPEED);
+  chassis.pid_wait_quick_chain();
+  lift.move(127);
+  pros::delay(170);
+  lift.move(0); 
+  pros::delay(20);
+  intake.move(127);
+
+  //bvack out and then tuyrbn to toggle 
+  chassis.pid_drive_set(-11_in, DRIVE_SPEED);
+  chassis.pid_wait_quick_chain();
+  chassis.pid_turn_set(-35,TURN_SPEED);
+  chassis.pid_wait_quick();
+  chassis.pid_drive_set(37_in, DRIVE_SPEED);
+  chassis.pid_wait_quick();
+  chassis.pid_turn_set(230,TURN_SPEED);
+  chassis.pid_wait();
+  chassis.pid_drive_set(40,DRIVE_SPEED);
+  chassis.pid_wait();
+  lift.move(127);
+  pros::delay(50);
+  lift.move(0);
+  chassis.pid_drive_set(-15,DRIVE_SPEED);
+  chassis.pid_wait();
+  //turn to intake second stack 
+
+
+  //chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
+  //chassis.pid_wait_quick_chain();
+}
+
+void justscore () {
+  chassis.pid_drive_set(7_in, 80, true);
+  chassis.pid_wait();
+  lift.move(-127);
+  pros::delay(240);
+  lift.move(0);
+  chassis.pid_drive_set(11_in, 40, true);
+  chassis.pid_wait();
+  pros::delay(300);
+  chassis.pid_drive_set(-11_in, 40, true);
+  chassis.pid_wait();
+}
+
 ///
 // Auto that tests everything
 ///
