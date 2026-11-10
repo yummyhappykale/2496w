@@ -71,7 +71,7 @@ void initialize() {
   ez::as::auton_selector.autons_add({
     
 
-   {".", ruileft},
+   {".", skills},
     //add new auton selector
     
     
@@ -266,7 +266,7 @@ void ez_template_extras() {
  */
 //why
 void opcontrol() {
-   bool descoretoggle = false;
+  bool descoretoggle = true;
   bool scrapertoggle = true;
   bool parktoggle = true;
   bool middlegoaltoggle = true;
@@ -286,11 +286,7 @@ void opcontrol() {
     // Gives you some extras to make EZ-Template
     ez_template_extras();
 
-    if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-      descore.set(descoretoggle);
-      descoretoggle = !descoretoggle;
-      
-    }
+   
 
 
     //chassis.opcontrol_tank();  // Tank control
@@ -403,7 +399,11 @@ if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
       
        }
 
-
+ if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+      descore.set(descoretoggle);
+      descoretoggle = !descoretoggle;
+      
+    }
 
     
 //rumble when middle goal down

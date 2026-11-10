@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "left7",
+    "project_name": "skills",
     "target": "v5",
     "templates": {
       "EZ-Template": {
@@ -425,7 +425,7 @@
     },
     "upload_options": {
       "description": "2496w",
-      "slot": 6,
+      "slot": 2,
       "icon": "planet"
     },
     "use_early_access": false
